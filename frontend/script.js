@@ -1,6 +1,6 @@
 // Configuración de la API del Backend
-const API_BASE_URL = 'http://127.0.0.1:5000/api'; // Dirección de tu backend Flask
-const UPLOADS_BASE_URL = 'http://127.0.0.1:5000'; // Dirección para acceder a las imágenes
+const API_BASE_URL = 'https://catalogo-productos.onrender.com/api'; // Dirección de tu backend Flask
+const UPLOADS_BASE_URL = 'https://catalogo-productos.onrender.com'; // Dirección para acceder a las imágenes
 
 // ¡ATENCIÓN! ESTE TOKEN DEBE COINCIDIR CON EL DE TU BACKEND (ADMIN_AUTH_TOKEN en app.py)
 // En una aplicación real, este token se obtendría del servidor tras el login.
