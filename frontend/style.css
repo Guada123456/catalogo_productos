@@ -1,0 +1,259 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f8f8;
+    margin: 0;
+    padding: 0;
+    color: #333;
+    line-height: 1.6;
+}
+
+header {
+    background-color: #eb8014;
+    padding: 15px 20px;
+    color: white;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.8em;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 0 15px;
+}
+
+/* Panel de Administración y Login */
+#admin-panel, #login-form, #product-form-modal {
+    border: 2px dashed #ff9900;
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: #fffaf0;
+    border-radius: 8px;
+    display: none; /* Se mostrarán/ocultarán con JS */
+}
+
+#login-form {
+    text-align: center;
+}
+
+#login-form input {
+    padding: 10px;
+    margin: 5px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    width: calc(100% - 24px);
+    max-width: 300px;
+}
+
+#product-form-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+    border: none;
+    padding: 25px;
+    box-sizing: border-box;
+    background-color: #fffaf0;
+    border-radius: 10px;
+
+    /* ---- ¡Agregá o modificá estas líneas! ---- */
+    max-height: 90vh; /* Altura máxima del 90% del viewport (pantalla) */
+    overflow-y: auto; /* Permite desplazamiento vertical si el contenido excede la altura */
+    /* ------------------------------------------ */
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999;
+    display: none;
+}
+
+/* Formulario dentro del modal */
+#product-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+#product-form input[type="text"],
+#product-form input[type="number"],
+#product-form textarea {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+#product-form input[type="file"] {
+    margin-bottom: 15px;
+}
+
+#current-image-preview {
+    max-width: 150px;
+    max-height: 150px;
+    margin-top: 10px;
+    border: 1px solid #eee;
+    display: block; /* Mantenemos block para que ocupe espacio, pero lo controlamos con JS */
+}
+
+
+/* Botones generales */
+button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    margin: 5px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+#logout-btn {
+    background-color: #dc3545;
+    float: right;
+    margin-top: 10px;
+}
+
+#logout-btn:hover {
+    background-color: #c82333;
+}
+
+/* Barra de Búsqueda */
+#search-bar {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+#search-input {
+    padding: 10px;
+    width: calc(100% - 40px);
+    max-width: 500px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1em;
+}
+
+/* Contenedor de Productos */
+#products-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+}
+
+.product-card {
+    border-radius: 10px;
+    background: white;
+    width: calc(50% - 10px); /* Para 2 columnas en pantallas pequeñas */
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centrar contenido */
+    text-align: center; /* Centrar texto */
+    box-sizing: border-box; /* Incluir padding en el ancho */
+}
+
+.product-card img {
+    width: 100%;
+    max-height: 180px;
+    object-fit: contain; /* Ajusta la imagen dentro de su contenedor sin recortar */
+    border-radius: 8px;
+    margin-bottom: 10px;
+    background-color: #f0f0f0; /* Fondo para imágenes transparentes */
+}
+
+.product-card h4 {
+    margin: 0 0 5px 0;
+    color: #333;
+    font-size: 1.2em;
+}
+
+.product-card p {
+    margin: 0 0 10px 0;
+    color: #555;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.whatsapp-btn {
+    background-color: #25d366;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+    transition: background-color 0.3s ease;
+    width: calc(100% - 20px);
+    margin-top: auto; /* Empuja el botón al fondo si el contenido varia */
+    box-sizing: border-box;
+}
+
+.whatsapp-btn:hover {
+    background-color: #1eaf53;
+}
+
+/* Botones de Admin en Product Card (inicialmente ocultos) */
+.admin-controls {
+    margin-top: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.admin-controls button {
+    padding: 6px 10px;
+    font-size: 0.9em;
+    margin: 2px;
+}
+
+.edit-btn {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.edit-btn:hover {
+    background-color: #e0a800;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
+/* Responsive design */
+@media (min-width: 768px) {
+    .product-card {
+        width: calc(33.33% - 14px); /* 3 columnas */
+    }
+}
+
+@media (min-width: 1024px) {
+    .product-card {
+        width: calc(25% - 15px); /* 4 columnas */
+    }
+}
