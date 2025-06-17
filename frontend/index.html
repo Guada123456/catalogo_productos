@@ -1,74 +1,75 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catálogo de Productos - Tosso Sanitarios</title>
-  
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catálogo de Productos - Tosso Sanitarios</title>
+  
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    Catálogo de Productos Tosso
-  </header>
+  <header>
+    Catálogo de Productos Tosso
+  </header>
 
-  <div class="container">
-    <div id="login-form">
-      <h3>Iniciar sesión administrador</h3>
-      <input type="text" id="username" placeholder="Usuario">
-      <input type="password" id="password" placeholder="Contraseña">
-      <button onclick="login()">Iniciar sesión</button>
-      <p id="login-error-message" style="color: red; display: none;"></p>
+  <div class="container">
+        
+
+    <div id="admin-panel">
+      <h3>Panel de Administrador</h3>
+      <button id="add-product-btn" onclick="openProductModal()">Agregar nuevo producto</button>
+      <button id="logout-btn" onclick="logout()">Cerrar sesión</button>     </div>
+
+    <hr style="border: 0; height: 1px; background: #eee; margin: 20px 0;">
+
+    <div id="search-bar">
+      <input type="text" id="search-input" placeholder="Buscar productos..." onkeyup="searchProducts()">
+    </div>
+
+    <div id="products-container">
+      <p style="text-align: center; width: 100%;">Cargando productos...</p>
+    </div>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay" onclick="closeProductModal()"></div>
+  <div id="product-form-modal">
+    <h3><span id="modal-title">Agregar Nuevo Producto</span></h3>
+    <form id="product-form">
+      <input type="hidden" id="product-id"> <label for="product-name">Nombre del Producto:</label>
+      <input type="text" id="product-name" required><br>
+      
+      <label for="product-price">Precio:</label>
+      <input type="number" id="product-price" step="0.01" required><br>
+      
+      <label for="product-description">Descripción (opcional):</label>
+      <textarea id="product-description" rows="3"></textarea><br>
+      
+      <label for="product-image">Imagen del Producto:</label>
+      <input type="file" id="product-image" accept="image/*"><br>
+      
+      <img id="current-image-preview" src="" alt="Imagen Actual" style="max-width: 150px; max-height: 150px; margin-top: 10px; display: none;"><br>
+      
+      <input type="checkbox" id="delete-current-image">
+      <label for="delete-current-image">Eliminar imagen actual</label><br><br>
+
+      <p id="upload-status" style="color: blue;"></p>
+
+      <button type="submit">Guardar Producto</button>
+      <button type="button" onclick="closeProductModal()">Cancelar</button>
+    </form>
+  </div>
+
+    <div class="footer-login-container">
+        <button id="show-login-btn" onclick="toggleLoginForm()">Iniciar Sesión Administrador</button>
+        <div id="login-form" style="display:none;"> <h3>Iniciar sesión administrador</h3>
+            <input type="text" id="username" placeholder="Usuario">
+            <input type="password" id="password" placeholder="Contraseña">
+            <button onclick="login()">Iniciar sesión</button>
+            <p id="login-error-message" style="color: red; display: none;"></p>
+        </div>
     </div>
 
-    <div id="admin-panel">
-      <h3>Panel de Administrador</h3>
-      <button id="add-product-btn" onclick="openProductModal()">Agregar nuevo producto</button>
-    </div>
 
-    <div style="text-align:right;">
-      <button id="logout-btn" onclick="logout()">Cerrar sesión</button>
-    </div>
-
-    <hr style="border: 0; height: 1px; background: #eee; margin: 20px 0;">
-
-    <div id="search-bar">
-      <input type="text" id="search-input" placeholder="Buscar productos..." onkeyup="searchProducts()">
-    </div>
-
-    <div id="products-container">
-      <p style="text-align: center; width: 100%;">Cargando productos...</p>
-    </div>
-  </div>
-
-  <div id="modal-overlay" class="modal-overlay" onclick="closeProductModal()"></div>
-  <div id="product-form-modal">
-    <h3><span id="modal-title">Agregar Nuevo Producto</span></h3>
-    <form id="product-form">
-      <input type="hidden" id="product-id"> <label for="product-name">Nombre del Producto:</label>
-      <input type="text" id="product-name" required><br>
-      
-      <label for="product-price">Precio:</label>
-      <input type="number" id="product-price" step="0.01" required><br>
-      
-      <label for="product-description">Descripción (opcional):</label>
-      <textarea id="product-description" rows="3"></textarea><br>
-      
-      <label for="product-image">Imagen del Producto:</label>
-      <input type="file" id="product-image" accept="image/*"><br>
-      
-      <img id="current-image-preview" src="" alt="Imagen Actual" style="max-width: 150px; max-height: 150px; margin-top: 10px; display: none;"><br>
-      
-      <input type="checkbox" id="delete-current-image">
-      <label for="delete-current-image">Eliminar imagen actual</label><br><br>
-
-      <p id="upload-status" style="color: blue;"></p>
-
-      <button type="submit">Guardar Producto</button>
-      <button type="button" onclick="closeProductModal()">Cancelar</button>
-    </form>
-  </div>
-
-  <script src="script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
