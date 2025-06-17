@@ -15,7 +15,18 @@ header {
     font-weight: bold;
     font-size: 1.8em;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    /* Nuevos estilos para el header para el botón flotante */
+    overflow: auto; /* Para contener el botón flotante */
+    display: flex; /* Para alinear h1 y botón */
+    justify-content: space-between; /* Espacio entre h1 y botón */
+    align-items: center; /* Alineación vertical */
 }
+
+header h1 { /* Asegura que el h1 no tenga margen extra */
+    margin: 0;
+    font-size: 1.8em; /* Ajusta el tamaño de fuente si es necesario */
+}
+
 
 .container {
     max-width: 1200px;
@@ -23,35 +34,123 @@ header {
     padding: 0 15px;
 }
 
-/* Panel de Administración y Login */
-#admin-panel, #login-form, #product-form-modal {
+/* ------------------------------------------- */
+/* NUEVOS ESTILOS PARA EL BOTÓN DE ADMIN EN EL HEADER */
+/* ------------------------------------------- */
+.admin-toggle-btn {
+    background-color: #f0ad4e; /* Naranja */
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    /* Removimos float: right; ya que el header es flex */
+    transition: background-color 0.3s ease;
+}
+
+.admin-toggle-btn:hover {
+    background-color: #ec971f; /* Naranja más oscuro al pasar el mouse */
+}
+
+
+/* ------------------------------------------- */
+/* ESTILOS PARA EL MODAL GENERAL (incluye el de login y el de producto) */
+/* ------------------------------------------- */
+.modal {
+    display: none; /* Oculto por defecto */
+    position: fixed; /* Fijo en la pantalla */
+    z-index: 1001; /* Sobre todo lo demás (product-form-modal tiene z-index 1000) */
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4); /* Fondo oscuro semitransparente */
+    padding-top: 60px; /* Espacio para que el modal no toque la parte superior */
+}
+
+.modal-content {
+    background-color: #fffaf0; /* Fondo del modal */
+    margin: 5% auto; /* Ajuste el margen superior para mejor centrado */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%; /* Ancho del modal */
+    max-width: 400px; /* Ancho máximo */
+    border-radius: 10px;
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.login-form {
+    text-align: center;
+    padding: 20px;
+}
+.login-form h2 {
+    margin-top: 0;
+    color: #333;
+}
+.login-form input[type="text"],
+.login-form input[type="password"] {
+    width: calc(100% - 20px);
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box; /* Asegura que el padding no aumente el ancho total */
+}
+.login-form button {
+    background-color: #007bff; /* Color azul */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.3s ease;
+}
+.login-form button:hover {
+    background-color: #0056b3;
+}
+
+
+/* Panel de Administración */
+/* #login-form ya no existe como elemento fuera del modal */
+#admin-panel {
     border: 2px dashed #ff9900;
     margin-bottom: 20px;
     padding: 20px;
     background-color: #fffaf0;
     border-radius: 8px;
-    display: none; /* Se mostrarán/ocultarán con JS */
+    display: none; /* Se mostrará/ocultará con JS */
+    text-align: center; /* Centrar el contenido del panel */
+}
+#admin-panel h3 {
+    margin-top: 0;
+    color: #333;
 }
 
-#login-form {
-    text-align: center;
-}
-
-#login-form input {
-    padding: 10px;
-    margin: 5px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    width: calc(100% - 24px);
-    max-width: 300px;
-}
-
+/* Modal de Agregar/Editar Producto */
 #product-form-modal {
     position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 1000;
+    z-index: 1000; /* Asegura que esté por debajo del modal de login si ambos abren al mismo tiempo */
     width: 90%;
     max-width: 600px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
@@ -61,10 +160,11 @@ header {
     background-color: #fffaf0;
     border-radius: 10px;
 
-    /* ---- ¡Agregá o modificá estas líneas! ---- */
+    /* ---- Ajustes para el scroll del modal ---- */
     max-height: 90vh; /* Altura máxima del 90% del viewport (pantalla) */
     overflow-y: auto; /* Permite desplazamiento vertical si el contenido excede la altura */
     /* ------------------------------------------ */
+    display: none; /* Asegura que esté oculto por defecto */
 }
 
 .modal-overlay {
@@ -74,11 +174,11 @@ header {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
-    z-index: 999;
+    z-index: 999; /* Por debajo del modal */
     display: none;
 }
 
-/* Formulario dentro del modal */
+/* Formulario dentro del modal de producto */
 #product-form label {
     display: block;
     margin-bottom: 5px;
@@ -105,7 +205,7 @@ header {
     max-height: 150px;
     margin-top: 10px;
     border: 1px solid #eee;
-    display: block; /* Mantenemos block para que ocupe espacio, pero lo controlamos con JS */
+    /* La visibilidad será controlada por JS, display: block; por defecto para que ocupe espacio si está visible */
 }
 
 
@@ -125,9 +225,10 @@ button:hover {
     background-color: #0056b3;
 }
 
+/* Botón de cerrar sesión movido al panel de admin, no necesita float:right */
 #logout-btn {
     background-color: #dc3545;
-    float: right;
+    /* float: none; Eliminamos el float aquí porque está dentro de admin-panel que puede ser flex/grid */
     margin-top: 10px;
 }
 
@@ -178,9 +279,10 @@ button:hover {
     border-radius: 8px;
     margin-bottom: 10px;
     background-color: #f0f0f0; /* Fondo para imágenes transparentes */
+    border: 2px solid #eb8014; /* Borde naranja a la imagen */
 }
 
-.product-card h4 {
+.product-card h3 { /* Cambié h4 a h3 en el HTML, ajusto aquí */
     margin: 0 0 5px 0;
     color: #333;
     font-size: 1.2em;
@@ -213,7 +315,7 @@ button:hover {
 }
 
 /* Botones de Admin en Product Card (inicialmente ocultos) */
-.admin-controls {
+.admin-actions { /* Corregido de .admin-controls a .admin-actions según tu HTML */
     margin-top: 10px;
     width: 100%;
     display: flex;
@@ -222,7 +324,7 @@ button:hover {
     flex-wrap: wrap;
 }
 
-.admin-controls button {
+.admin-actions button {
     padding: 6px 10px;
     font-size: 0.9em;
     margin: 2px;

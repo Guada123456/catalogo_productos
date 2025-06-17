@@ -3,18 +3,28 @@ const API_BASE_URL = 'https://catalogo-productos.onrender.com/api'; // Direcció
 const UPLOADS_BASE_URL = 'https://catalogo-productos.onrender.com'; // Dirección para acceder a las imágenes
 
 // ¡ATENCIÓN! ESTE TOKEN DEBE COINCIDIR CON EL DE TU BACKEND (ADMIN_AUTH_TOKEN en app.py)
-// En una aplicación real, este token se obtendría del servidor tras el login.
-const ADMIN_AUTH_TOKEN = "guada123"; 
+// Si tu backend ya está validando credenciales de usuario/contraseña, este token aquí en el frontend
+// DEBE SER el token que tu backend ESPERA RECIBIR para autorizar peticiones.
+// Si tu backend genera un token dinámico al loguearse, entonces esta variable se establecerá después del login.
+// Por ahora, lo mantenemos como una constante si es el mismo que hardcodeaste en el backend.
+// Si tu backend genera un token JWT al iniciar sesión, esta línea NO debe ser una constante.
+let adminAuthToken = localStorage.getItem('adminAuthToken') || "guada123"; // Carga del localStorage o usa el default
 
 // Variables globales
 let allProducts = [];
-let isAdminLoggedIn = false; // Estado de login del admin
-const whatsappNumber = "5493525516070"; // Reemplaza con tu número de WhatsApp (ej: 5493543XXXXXXX para Argentina)
+// isAdminLoggedIn ya no es una variable global directa, se gestiona con localStorage
+const whatsappNumber = "5493525516070"; // Reemplaza con tu número de WhatsApp
 const placeholderImage = 'https://via.placeholder.com/150x150?text=No+Image';
 
 // --- Elementos del DOM ---
+// Nuevos elementos para el modal de login y el botón de alternar
+const adminLoginToggle = document.getElementById('adminLoginToggle');
+const adminLoginModal = document.getElementById('admin-login-modal');
+const usernameInput = document.getElementById("username"); // Reusa el ID del input
+const passwordInput = document.getElementById("password"); // Reusa el ID del input
+
 const adminPanel = document.getElementById("admin-panel");
-const loginForm = document.getElementById("login-form");
+// const loginForm = document.getElementById("login-form"); // Eliminado, ya no existe fuera del modal
 const logoutBtn = document.getElementById("logout-btn");
 const loginErrorMessage = document.getElementById("login-error-message");
 const productsContainer = document.getElementById("products-container");
@@ -36,38 +46,42 @@ const uploadStatus = document.getElementById("upload-status");
 
 // --- LÓGICA DE AUTENTICACIÓN Y VISIBILIDAD DE PANELES ---
 
-// Verificar el estado de login al cargar la página
-document.addEventListener('DOMContentLoaded', () => {
-    // Intentar obtener el token de localStorage (simula una sesión)
-    const storedToken = localStorage.getItem('adminToken');
-    if (storedToken === ADMIN_AUTH_TOKEN) { // Validar que sea el token correcto
-        isAdminLoggedIn = true;
-        updateUIForAdminStatus();
-    } else {
-        isAdminLoggedIn = false;
-        updateUIForAdminStatus();
-    }
-    fetchProducts(); // Cargar productos al iniciar
-});
+// Función para verificar el estado del administrador y actualizar la UI
+function checkAdminStatus() {
+    // Si localStorage.getItem('adminLoggedIn') es 'true' Y hay un token, asumimos que está logueado
+    const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
 
-function updateUIForAdminStatus() {
-    if (isAdminLoggedIn) {
-        adminPanel.style.display = "block";
-        loginForm.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-        loginErrorMessage.style.display = "none";
+    if (isLoggedIn) {
+        adminPanel.style.display = "block"; // Muestra el panel de admin
+        if (adminLoginToggle) adminLoginToggle.style.display = "none"; // Oculta el botón de login
     } else {
-        adminPanel.style.display = "none";
-        loginForm.style.display = "block";
-        logoutBtn.style.display = "none";
+        adminPanel.style.display = "none"; // Oculta el panel de admin
+        if (adminLoginToggle) adminLoginToggle.style.display = "block"; // Muestra el botón de login
     }
     displayProducts(allProducts); // Vuelve a renderizar para mostrar/ocultar botones de admin
 }
 
-// Función para iniciar sesión
+// Función para abrir el modal de login de administrador
+function openAdminLoginModal() {
+    if (adminLoginModal) {
+        adminLoginModal.style.display = 'block';
+        usernameInput.value = ''; // Limpiar campos al abrir
+        passwordInput.value = '';
+        loginErrorMessage.style.display = 'none'; // Ocultar mensaje de error
+    }
+}
+
+// Función para cerrar el modal de login de administrador
+function closeAdminLoginModal() {
+    if (adminLoginModal) {
+        adminLoginModal.style.display = 'none';
+    }
+}
+
+// Función para iniciar sesión (llamada desde el HTML)
 window.login = async () => {
-    const username = document.getElementById("username").value;
-    const password = document.getElementById("password").value;
+    const username = usernameInput.value;
+    const password = passwordInput.value;
     loginErrorMessage.style.display = "none"; // Reset error message
 
     try {
@@ -82,27 +96,30 @@ window.login = async () => {
         const data = await response.json();
 
         if (response.ok) {
-            localStorage.setItem('adminToken', data.token); // Guardar token para simular sesión
-            isAdminLoggedIn = true;
+            adminAuthToken = data.token; // Guarda el token real recibido del backend
+            localStorage.setItem('adminAuthToken', adminAuthToken); // Guarda el token
+            localStorage.setItem('adminLoggedIn', 'true'); // Marca que el admin está logueado
             alert("Sesión iniciada correctamente.");
-            updateUIForAdminStatus();
+            checkAdminStatus(); // Actualiza la interfaz
+            closeAdminLoginModal(); // Cierra el modal de login
         } else {
-            loginErrorMessage.textContent = data.message || "Error al iniciar sesión.";
+            loginErrorMessage.textContent = data.message || "Error al iniciar sesión. Credenciales inválidas.";
             loginErrorMessage.style.display = "block";
         }
     } catch (error) {
-        loginErrorMessage.textContent = "Error de conexión al servidor.";
+        loginErrorMessage.textContent = "Error de conexión al servidor al intentar iniciar sesión.";
         loginErrorMessage.style.display = "block";
         console.error("Error al iniciar sesión:", error);
     }
 };
 
-// Función para cerrar sesión
+// Función para cerrar sesión (llamada desde el HTML)
 window.logout = () => {
-    localStorage.removeItem('adminToken'); // Eliminar token de localStorage
-    isAdminLoggedIn = false;
+    adminAuthToken = ''; // Limpia el token
+    localStorage.removeItem('adminAuthToken'); // Eliminar token de localStorage
+    localStorage.removeItem('adminLoggedIn'); // Remueve la marca de logueado
     alert("Sesión cerrada.");
-    updateUIForAdminStatus();
+    checkAdminStatus(); // Actualiza la interfaz
 };
 
 
@@ -110,6 +127,7 @@ window.logout = () => {
 
 // Función para obtener productos del backend
 async function fetchProducts() {
+    productsContainer.innerHTML = '<p style="text-align: center; width: 100%;">Cargando productos...</p>';
     try {
         const response = await fetch(`${API_BASE_URL}/products`);
         if (!response.ok) {
@@ -133,29 +151,40 @@ function displayProducts(productsToDisplay) {
         return;
     }
 
+    // Verificar si el admin está logueado (optimizado)
+    const isAdminLoggedInNow = localStorage.getItem('adminLoggedIn') === 'true';
+
     productsToDisplay.forEach(product => {
         const productDiv = document.createElement("div");
         productDiv.className = "product-card";
-        const imageUrl = product.imageUrl ? `${UPLOADS_BASE_URL}${product.imageUrl}` : placeholderImage;
-        const formattedPrice = product.price ? product.price.toFixed(2).replace('.', ',') : 'N/A';
+        // Asume que el backend devuelve 'image_url' (como en la última versión que te pasé)
+        // Y no 'imageUrl' con minúscula. Si el backend usa 'imageUrl', ajusta aquí.
+        const imageUrl = product.image_url ? `${UPLOADS_BASE_URL}/uploads/${product.image_url}` : placeholderImage;
+        const formattedPrice = product.price ? parseFloat(product.price).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'; // Asegura 2 decimales y formato local
 
         productDiv.innerHTML = `
             <img src="${imageUrl}" alt="${product.name}">
-            <h4>${product.name}</h4>
-            <p>Precio: $${formattedPrice}</p>
+            <h3>${product.name}</h3>
+            <p class="price">Precio: $${formattedPrice}</p>
             ${product.description ? `<p style="font-size:0.9em; color:#777;">${product.description}</p>` : ''}
-            <a href="https://wa.me/${whatsappNumber}?text=Hola!%20Estoy%20interesado/a%20en%20el%20producto:%20*${encodeURIComponent(product.name)}*%20con%20precio%20$${formattedPrice}.%0A%0A¡Espero tu respuesta!" target="_blank" class="whatsapp-btn">Consultar por WhatsApp</a>
+            <button class="whatsapp-btn" onclick="consultarWhatsApp('${product.name}', ${product.price})">Consultar por WhatsApp</button>
             
-            ${isAdminLoggedIn ? `
-            <div class="admin-controls">
-                <button class="edit-btn" onclick="editProduct(${product.id})">Editar</button>
-                <button class="delete-btn" onclick="deleteProduct(${product.id}, '${product.imageUrl || ''}')">Eliminar</button>
+            ${isAdminLoggedInNow ? `
+            <div class="admin-actions"> <button class="edit-btn" onclick="editProduct(${product.id})">Editar</button>
+                <button class="delete-btn" onclick="deleteProduct(${product.id})">Eliminar</button>
             </div>
             ` : ''}
         `;
         productsContainer.appendChild(productDiv);
     });
 }
+
+function consultarWhatsApp(productName, productPrice) {
+    const message = `¡Hola! Me gustaría consultar sobre el producto "${productName}" que tiene un precio de $${parseFloat(productPrice).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.%0A%0A¡Espero tu respuesta!`;
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+}
+
 
 // Función de búsqueda de productos
 window.searchProducts = () => {
@@ -172,6 +201,13 @@ window.searchProducts = () => {
 
 // Abrir el modal de producto (para agregar o editar)
 window.openProductModal = async (productId = null) => {
+    // Validar si está logueado ANTES de abrir el modal de producto
+    if (localStorage.getItem('adminLoggedIn') !== 'true') {
+        alert("Debes iniciar sesión como administrador para realizar esta acción.");
+        openAdminLoginModal(); // Ofrecer abrir el modal de login
+        return;
+    }
+
     productForm.reset(); // Limpiar el formulario
     productIdInput.value = ''; // Resetear ID
     currentImagePreview.style.display = 'none'; // Ocultar previsualización de imagen
@@ -190,8 +226,9 @@ window.openProductModal = async (productId = null) => {
             productNameInput.value = product.name;
             productPriceInput.value = product.price;
             productDescriptionInput.value = product.description || '';
-            if (product.imageUrl) {
-                currentImagePreview.src = `${UPLOADS_BASE_URL}${product.imageUrl}`;
+            // Usa product.image_url según el backend
+            if (product.image_url) {
+                currentImagePreview.src = `${UPLOADS_BASE_URL}/uploads/${product.image_url}`;
                 currentImagePreview.style.display = 'block';
             }
         } catch (error) {
@@ -218,8 +255,10 @@ window.closeProductModal = () => {
 productForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (!isAdminLoggedIn) {
-        alert("No tienes permisos de administrador.");
+    // Verificación de autenticación al momento de enviar
+    if (localStorage.getItem('adminLoggedIn') !== 'true' || !adminAuthToken) {
+        alert("No tienes permisos de administrador o tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+        openAdminLoginModal();
         return;
     }
 
@@ -242,9 +281,11 @@ productForm.addEventListener("submit", async (e) => {
     if (imageFile) {
         formData.append('image', imageFile);
     }
-    formData.append('delete_image_flag', deleteCurrentImage); // Enviar flag si la imagen actual debe borrarse
+    // Asegúrate de que el nombre del flag coincida con lo que espera tu backend Flask
+    formData.append('delete_image', deleteCurrentImage ? 'true' : 'false'); 
 
     uploadStatus.textContent = 'Guardando producto...';
+    uploadStatus.style.color = 'blue';
 
     try {
         let response;
@@ -253,7 +294,7 @@ productForm.addEventListener("submit", async (e) => {
             response = await fetch(`${API_BASE_URL}/products/${id}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${ADMIN_AUTH_TOKEN}` // Enviar token de autenticación
+                    'Authorization': `Bearer ${adminAuthToken}` // Enviar token de autenticación
                 },
                 body: formData // FormData se envía directamente sin 'Content-Type'
             });
@@ -262,7 +303,7 @@ productForm.addEventListener("submit", async (e) => {
             response = await fetch(`${API_BASE_URL}/products`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${ADMIN_AUTH_TOKEN}` // Enviar token de autenticación
+                    'Authorization': `Bearer ${adminAuthToken}` // Enviar token de autenticación
                 },
                 body: formData
             });
@@ -273,25 +314,31 @@ productForm.addEventListener("submit", async (e) => {
             throw new Error(errorData.message || 'Error al guardar el producto');
         }
 
-        alert("Producto guardado exitosamente!");
-        closeProductModal();
-        fetchProducts(); // Recargar productos para actualizar la lista
+        uploadStatus.textContent = 'Producto guardado exitosamente!';
+        uploadStatus.style.color = 'green';
+        setTimeout(() => {
+            closeProductModal();
+            fetchProducts(); // Recargar productos para actualizar la lista
+        }, 1000); // Pequeño retraso para que el usuario vea el mensaje
     } catch (error) {
-        uploadStatus.textContent = 'Error al guardar el producto.';
-        alert("Error al guardar el producto: " + error.message);
+        uploadStatus.textContent = `Error al guardar el producto: ${error.message}`;
+        uploadStatus.style.color = 'red';
         console.error("Error al guardar producto:", error);
+        alert("Error al guardar el producto: " + error.message); // Alerta para el usuario
     }
 });
 
 // Función para editar un producto (llamada desde el botón de cada tarjeta)
 window.editProduct = (productId) => {
-    openProductModal(productId);
+    openProductModal(productId); // Ya verifica el login dentro de openProductModal
 };
 
 // Función para eliminar un producto (llamada desde el botón de cada tarjeta)
 window.deleteProduct = async (productId) => {
-    if (!isAdminLoggedIn) {
-        alert("No tienes permisos de administrador.");
+    // Verificación de autenticación al momento de eliminar
+    if (localStorage.getItem('adminLoggedIn') !== 'true' || !adminAuthToken) {
+        alert("No tienes permisos de administrador o tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+        openAdminLoginModal();
         return;
     }
 
@@ -303,7 +350,7 @@ window.deleteProduct = async (productId) => {
         const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${ADMIN_AUTH_TOKEN}` // Enviar token
+                'Authorization': `Bearer ${adminAuthToken}` // Enviar token
             }
         });
 
@@ -331,8 +378,8 @@ productImageInput.addEventListener('change', (event) => {
         };
         reader.readAsDataURL(file);
     } else {
-        // Si no se selecciona ningún archivo, ocultar la vista previa
-        // Pero mantener la imagen si estamos en modo edición y no se eliminó
+        // Si no se selecciona ningún archivo, y no estamos editando o se marcó eliminar, ocultar la vista previa
+        // Si estamos editando y no se marcó eliminar, la preview se mantiene de la imagen actual del producto
         if (!productIdInput.value || deleteCurrentImageCheckbox.checked) {
              currentImagePreview.src = '';
              currentImagePreview.style.display = 'none';
@@ -345,8 +392,29 @@ deleteCurrentImageCheckbox.addEventListener('change', () => {
     if (deleteCurrentImageCheckbox.checked) {
         currentImagePreview.style.display = 'none';
         productImageInput.value = ''; // Limpiar el input de archivo si se va a eliminar la imagen actual
-    } else if (productIdInput.value && currentImagePreview.src !== placeholderImage && currentImagePreview.src !== '') {
+    } else if (productIdInput.value && currentImagePreview.src && currentImagePreview.src !== placeholderImage) {
         // Si hay un producto editándose y tenía imagen, mostrarla de nuevo
         currentImagePreview.style.display = 'block';
     }
+});
+
+// --- Event Listeners y ejecución inicial ---
+document.addEventListener('DOMContentLoaded', () => {
+    fetchProducts();
+    checkAdminStatus(); // Verifica el estado del admin al cargar la página
+
+    // Evento para abrir el modal de login de admin al hacer clic en el botón "Admin"
+    if (adminLoginToggle) { // Asegura que el botón existe en el HTML
+        adminLoginToggle.addEventListener('click', openAdminLoginModal);
+    }
+
+    // Cierra el modal si se hace clic fuera de él (overlay)
+    window.onclick = function(event) {
+        if (event.target == adminLoginModal) {
+            closeAdminLoginModal();
+        }
+        if (event.target == modalOverlay) {
+            closeProductModal();
+        }
+    };
 });
