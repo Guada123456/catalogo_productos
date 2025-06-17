@@ -1,30 +1,26 @@
 // Configuración de la API del Backend
 const API_BASE_URL = 'https://catalogo-productos.onrender.com/api'; // Dirección de tu backend Flask
-const UPLOADS_BASE_URL = 'https://catalogo-productos.onrender.com'; // Dirección para acceder a las imágenes
+const UPLOADS_BASE_URL = 'https://catalogo-productos.onrender.com'; // Necesario para imágenes locales
 
-// ¡ATENCIÓN! ESTE TOKEN DEBE COINCIDIR CON EL DE TU BACKEND (ADMIN_AUTH_TOKEN en app.py)
 let adminAuthToken = localStorage.getItem('adminAuthToken') || "guada123";
 
 // Variables globales
 let allProducts = [];
-const whatsappNumber = "5493525516070"; // Reemplaza con tu número de WhatsApp
+const whatsappNumber = "5493525516070";
 const placeholderImage = 'https://via.placeholder.com/150x150?text=No+Image';
 
-// --- Elementos del DOM ---
+// --- Elementos del DOM (Mantener lo último que te pasé con el botón al final) ---
 const adminPanel = document.getElementById("admin-panel");
-const loginForm = document.getElementById("login-form"); // Ahora es el formulario al final
-const showLoginBtn = document.getElementById("show-login-btn"); // Nuevo botón para mostrar/ocultar login
+const loginForm = document.getElementById("login-form");
+const showLoginBtn = document.getElementById("show-login-btn");
 const logoutBtn = document.getElementById("logout-btn");
 const loginErrorMessage = document.getElementById("login-error-message");
 const productsContainer = document.getElementById("products-container");
 const searchInput = document.getElementById("search-input");
 
-// Campos de login (ahora referenciados directamente desde el formulario que puede estar oculto)
 const usernameInput = document.getElementById("username");
 const passwordInput = document.getElementById("password");
 
-
-// Modal de producto
 const productFormModal = document.getElementById("product-form-modal");
 const modalOverlay = document.getElementById("modal-overlay");
 const modalTitle = document.getElementById("modal-title");
@@ -40,41 +36,37 @@ const uploadStatus = document.getElementById("upload-status");
 
 // --- LÓGICA DE AUTENTICACIÓN Y VISIBILIDAD DE PANELES ---
 
-// Función para verificar el estado del administrador y actualizar la UI
 function checkAdminStatus() {
     const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
 
     if (isLoggedIn) {
-        adminPanel.style.display = "block"; // Muestra el panel de admin
-        if (showLoginBtn) showLoginBtn.style.display = "none"; // Oculta el botón de mostrar login
-        if (loginForm) loginForm.style.display = "none"; // Oculta el formulario de login si ya está logueado
+        adminPanel.style.display = "block";
+        if (showLoginBtn) showLoginBtn.style.display = "none";
+        if (loginForm) loginForm.style.display = "none";
     } else {
-        adminPanel.style.display = "none"; // Oculta el panel de admin
-        if (showLoginBtn) showLoginBtn.style.display = "block"; // Muestra el botón de mostrar login
-        // El formulario de login estará oculto por defecto, se muestra con toggleLoginForm
+        adminPanel.style.display = "none";
+        if (showLoginBtn) showLoginBtn.style.display = "block";
     }
-    displayProducts(allProducts); // Vuelve a renderizar para mostrar/ocultar botones de admin
+    displayProducts(allProducts);
 }
 
-// Nueva función para alternar la visibilidad del formulario de login
 window.toggleLoginForm = () => {
     if (loginForm.style.display === 'none') {
         loginForm.style.display = 'block';
-        usernameInput.value = ''; // Limpiar campos al mostrar
+        usernameInput.value = '';
         passwordInput.value = '';
-        loginErrorMessage.style.display = 'none'; // Ocultar mensaje de error
-        showLoginBtn.textContent = 'Ocultar Formulario'; // Cambiar texto del botón
+        loginErrorMessage.style.display = 'none';
+        showLoginBtn.textContent = 'Ocultar Formulario';
     } else {
         loginForm.style.display = 'none';
-        showLoginBtn.textContent = 'Iniciar Sesión Administrador'; // Restaurar texto del botón
+        showLoginBtn.textContent = 'Iniciar Sesión Administrador';
     }
 };
 
-// Función para iniciar sesión
 window.login = async () => {
     const username = usernameInput.value;
     const password = passwordInput.value;
-    loginErrorMessage.style.display = "none"; // Reset error message
+    loginErrorMessage.style.display = "none";
 
     try {
         const response = await fetch(`${API_BASE_URL}/login`, {
@@ -92,33 +84,29 @@ window.login = async () => {
             localStorage.setItem('adminAuthToken', adminAuthToken);
             localStorage.setItem('adminLoggedIn', 'true');
             alert("Sesión iniciada correctamente.");
-            checkAdminStatus(); // Actualiza la interfaz
-            // Ya no es necesario ocultar el formulario de login aquí directamente,
-            // checkAdminStatus lo maneja si se hizo el login correctamente.
+            checkAdminStatus();
         } else {
             loginErrorMessage.textContent = data.message || "Error al iniciar sesión. Credenciales inválidas.";
             loginErrorMessage.style.display = "block";
         }
     } catch (error) {
         loginErrorMessage.textContent = "Error de conexión al servidor al intentar iniciar sesión.";
-        login.style.display = "block"; // Asegúrate de que el mensaje de error se muestre
+        loginErrorMessage.style.display = "block";
         console.error("Error al iniciar sesión:", error);
     }
 };
 
-// Función para cerrar sesión
 window.logout = () => {
     adminAuthToken = '';
     localStorage.removeItem('adminAuthToken');
     localStorage.removeItem('adminLoggedIn');
     alert("Sesión cerrada.");
-    checkAdminStatus(); // Actualiza la interfaz
+    checkAdminStatus();
 };
 
 
 // --- LÓGICA DE PRODUCTOS (CARGA Y BÚSQUEDA PARA CLIENTES) ---
 
-// Función para obtener productos del backend
 async function fetchProducts() {
     productsContainer.innerHTML = '<p style="text-align: center; width: 100%;">Cargando productos...</p>';
     try {
@@ -127,7 +115,7 @@ async function fetchProducts() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const productsData = await response.json();
-        allProducts = productsData.sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabéticamente
+        allProducts = productsData.sort((a, b) => a.name.localeCompare(b.name));
         displayProducts(allProducts);
     } catch (error) {
         productsContainer.innerHTML = '<p style="text-align: center; width: 100%; color: red;">Error al cargar productos. Asegúrate de que el backend esté funcionando.</p>';
@@ -135,9 +123,8 @@ async function fetchProducts() {
     }
 }
 
-// Función para mostrar productos en el DOM
 function displayProducts(productsToDisplay) {
-    productsContainer.innerHTML = ''; // Limpiar productos existentes
+    productsContainer.innerHTML = '';
 
     if (productsToDisplay.length === 0) {
         productsContainer.innerHTML = '<p style="text-align: center; width: 100%;">No se encontraron productos.</p>';
@@ -149,6 +136,7 @@ function displayProducts(productsToDisplay) {
     productsToDisplay.forEach(product => {
         const productDiv = document.createElement("div");
         productDiv.className = "product-card";
+        // Esta línea es CRÍTICA para que las imágenes locales se muestren
         const imageUrl = product.image_url ? `${UPLOADS_BASE_URL}/uploads/${product.image_url}` : placeholderImage;
         const formattedPrice = product.price ? parseFloat(product.price).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A';
 
@@ -177,7 +165,6 @@ function consultarWhatsApp(productName, productPrice) {
 }
 
 
-// Función de búsqueda de productos
 window.searchProducts = () => {
     const searchTerm = searchInput.value.toLowerCase();
     const filteredProducts = allProducts.filter(product =>
@@ -190,22 +177,18 @@ window.searchProducts = () => {
 
 // --- LÓGICA DE ADMINISTRACIÓN (CRUD DE PRODUCTOS) ---
 
-// Abrir el modal de producto (para agregar o editar)
 window.openProductModal = async (productId = null) => {
     if (localStorage.getItem('adminLoggedIn') !== 'true') {
         alert("Debes iniciar sesión como administrador para realizar esta acción.");
-        // Opcional: podrías mostrar el formulario de login aquí si lo deseas
-        // loginForm.style.display = 'block';
-        // showLoginBtn.textContent = 'Ocultar Formulario';
         return;
     }
 
-    productForm.reset(); // Limpiar el formulario
-    productIdInput.value = ''; // Resetear ID
-    currentImagePreview.style.display = 'none'; // Ocultar previsualización de imagen
+    productForm.reset();
+    productIdInput.value = '';
+    currentImagePreview.style.display = 'none';
     currentImagePreview.src = '';
-    uploadStatus.textContent = ''; // Limpiar estado de subida
-    deleteCurrentImageCheckbox.checked = false; // Desmarcar checkbox de eliminar imagen
+    uploadStatus.textContent = '';
+    deleteCurrentImageCheckbox.checked = false;
 
     if (productId) {
         modalTitle.textContent = "Editar Producto";
@@ -218,6 +201,7 @@ window.openProductModal = async (productId = null) => {
             productNameInput.value = product.name;
             productPriceInput.value = product.price;
             productDescriptionInput.value = product.description || '';
+            // Esta línea es CRÍTICA para que las imágenes locales se muestren
             if (product.image_url) {
                 currentImagePreview.src = `${UPLOADS_BASE_URL}/uploads/${product.image_url}`;
                 currentImagePreview.style.display = 'block';
@@ -235,14 +219,12 @@ window.openProductModal = async (productId = null) => {
     modalOverlay.style.display = "block";
 };
 
-// Cerrar el modal de producto
 window.closeProductModal = () => {
     productFormModal.style.display = "none";
     modalOverlay.style.display = "none";
-    productForm.reset(); // Limpiar el formulario al cerrar
+    productForm.reset();
 };
 
-// Manejar el envío del formulario de producto (agregar/editar)
 productForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -270,7 +252,7 @@ productForm.addEventListener("submit", async (e) => {
     if (imageFile) {
         formData.append('image', imageFile);
     }
-    formData.append('delete_image', deleteCurrentImage ? 'true' : 'false'); 
+    formData.append('delete_image', deleteCurrentImage ? 'true' : 'false');
 
     uploadStatus.textContent = 'Guardando producto...';
     uploadStatus.style.color = 'blue';
@@ -314,12 +296,10 @@ productForm.addEventListener("submit", async (e) => {
     }
 });
 
-// Función para editar un producto
 window.editProduct = (productId) => {
     openProductModal(productId);
 };
 
-// Función para eliminar un producto
 window.deleteProduct = async (productId) => {
     if (localStorage.getItem('adminLoggedIn') !== 'true' || !adminAuthToken) {
         alert("No tienes permisos de administrador o tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
@@ -351,7 +331,6 @@ window.deleteProduct = async (productId) => {
     }
 };
 
-// Vista previa de la imagen seleccionada en el formulario del modal
 productImageInput.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -369,7 +348,6 @@ productImageInput.addEventListener('change', (event) => {
     }
 });
 
-// Cuando el checkbox de eliminar imagen actual cambia
 deleteCurrentImageCheckbox.addEventListener('change', () => {
     if (deleteCurrentImageCheckbox.checked) {
         currentImagePreview.style.display = 'none';
@@ -379,12 +357,10 @@ deleteCurrentImageCheckbox.addEventListener('change', () => {
     }
 });
 
-// --- Event Listeners y ejecución inicial ---
 document.addEventListener('DOMContentLoaded', () => {
     fetchProducts();
-    checkAdminStatus(); // Verifica el estado del admin al cargar la página
+    checkAdminStatus();
 
-    // Manejar clics fuera del modal de producto para cerrarlo
     window.onclick = function(event) {
         if (event.target == modalOverlay) {
             closeProductModal();
