@@ -56,18 +56,18 @@ function updateUIForAdminStatus() {
         adminPanel.style.display = "block";
         loginForm.style.display = "none"; // Si está logueado, ocultar el formulario de login
         logoutBtn.style.display = "inline-block";
-        if (showLoginBtn) showLoginBtn.style.display = "none"; // <--- NUEVO: Ocultar el botón de mostrar login si está logueado
+        if (showLoginBtn) showLoginBtn.style.display = "none"; // Ocultar el botón de mostrar login si está logueado
         loginErrorMessage.style.display = "none";
     } else {
         adminPanel.style.display = "none";
-        loginForm.style.display = "none"; // <--- NUEVO: Ocultar el formulario de login al inicio
+        loginForm.style.display = "none"; // Ocultar el formulario de login al inicio
         logoutBtn.style.display = "none";
-        if (showLoginBtn) showLoginBtn.style.display = "inline-block"; // <--- NUEVO: Mostrar el botón de mostrar login si no está logueado
+        if (showLoginBtn) showLoginBtn.style.display = "inline-block"; // Mostrar el botón de mostrar login si no está logueado
     }
     displayProducts(allProducts); // Vuelve a renderizar para mostrar/ocultar botones de admin
 }
 
-// <--- NUEVA FUNCIÓN: Para mostrar/ocultar el formulario de login
+// Para mostrar/ocultar el formulario de login
 window.toggleLoginForm = () => {
     if (loginForm.style.display === 'none') {
         loginForm.style.display = 'block';
@@ -149,8 +149,11 @@ function displayProducts(productsToDisplay) {
     productsToDisplay.forEach(product => {
         const productDiv = document.createElement("div");
         productDiv.className = "product-card";
-        // Aquí se usa product.imageUrl y UPLOADS_BASE_URL como en tu versión original
-        const imageUrl = product.imageUrl ? `${UPLOADS_BASE_URL}${product.imageUrl}` : placeholderImage;
+        // MODIFICACIÓN APLICADA AQUÍ: Asegurarse de que no haya doble barra si imageUrl ya empieza con /
+        const imageUrl = product.imageUrl 
+            ? `${UPLOADS_BASE_URL}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}` 
+            : placeholderImage;
+
         const formattedPrice = product.price ? product.price.toFixed(2).replace('.', ',') : 'N/A';
 
         productDiv.innerHTML = `
@@ -204,9 +207,9 @@ window.openProductModal = async (productId = null) => {
             productNameInput.value = product.name;
             productPriceInput.value = product.price;
             productDescriptionInput.value = product.description || '';
-            // Aquí se usa product.imageUrl y UPLOADS_BASE_URL como en tu versión original
             if (product.imageUrl) {
-                currentImagePreview.src = `${UPLOADS_BASE_URL}${product.imageUrl}`;
+                // MODIFICACIÓN APLICADA AQUÍ: Asegurarse de que no haya doble barra si imageUrl ya empieza con /
+                currentImagePreview.src = `${UPLOADS_BASE_URL}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}`;
                 currentImagePreview.style.display = 'block';
             }
         } catch (error) {
@@ -221,6 +224,7 @@ window.openProductModal = async (productId = null) => {
     productFormModal.style.display = "block";
     modalOverlay.style.display = "block";
 };
+
 
 // Cerrar el modal de producto
 window.closeProductModal = () => {
@@ -324,7 +328,7 @@ window.deleteProduct = async (productId) => {
 
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Error al eliminar el producto');
+            throw new new Error(errorData.message || 'Error al eliminar el producto');
         }
 
         alert("Producto eliminado exitosamente.");
