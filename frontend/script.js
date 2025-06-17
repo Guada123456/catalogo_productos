@@ -1,26 +1,27 @@
-// Configuración de la API del Backend
 const API_BASE_URL = 'https://catalogo-productos.onrender.com/api'; // Dirección de tu backend Flask
-const UPLOADS_BASE_URL = 'https://catalogo-productos.onrender.com'; // Necesario para imágenes locales
 
-let adminAuthToken = localStorage.getItem('adminAuthToken') || "guada123";
+const UPLOADS_BASE_URL = 'https://catalogo-productos.onrender.com'; // Dirección para acceder a las imágenes
+
+// ¡ATENCIÓN! ESTE TOKEN DEBE COINCIDIR CON EL DE TU BACKEND (ADMIN_AUTH_TOKEN en app.py)
+// En una aplicación real, este token se obtendría del servidor tras el login.
+const ADMIN_AUTH_TOKEN = "guada123";
 
 // Variables globales
 let allProducts = [];
-const whatsappNumber = "5493525516070";
+let isAdminLoggedIn = false; // Estado de login del admin
+const whatsappNumber = "5493525516070"; // Reemplaza con tu número de WhatsApp (ej: 5493543XXXXXXX para Argentina)
 const placeholderImage = 'https://via.placeholder.com/150x150?text=No+Image';
 
-// --- Elementos del DOM (Mantener lo último que te pasé con el botón al final) ---
+// --- Elementos del DOM ---
 const adminPanel = document.getElementById("admin-panel");
 const loginForm = document.getElementById("login-form");
-const showLoginBtn = document.getElementById("show-login-btn");
+const showLoginBtn = document.getElementById("show-login-btn"); // <--- NUEVO: Referencia al botón de mostrar login
 const logoutBtn = document.getElementById("logout-btn");
 const loginErrorMessage = document.getElementById("login-error-message");
 const productsContainer = document.getElementById("products-container");
 const searchInput = document.getElementById("search-input");
 
-const usernameInput = document.getElementById("username");
-const passwordInput = document.getElementById("password");
-
+// Modal de producto
 const productFormModal = document.getElementById("product-form-modal");
 const modalOverlay = document.getElementById("modal-overlay");
 const modalTitle = document.getElementById("modal-title");
@@ -36,37 +37,52 @@ const uploadStatus = document.getElementById("upload-status");
 
 // --- LÓGICA DE AUTENTICACIÓN Y VISIBILIDAD DE PANELES ---
 
-function checkAdminStatus() {
-    const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+// Verificar el estado de login al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    // Intentar obtener el token de localStorage (simula una sesión)
+    const storedToken = localStorage.getItem('adminToken');
+    if (storedToken === ADMIN_AUTH_TOKEN) { // Validar que sea el token correcto
+        isAdminLoggedIn = true;
+        updateUIForAdminStatus();
+    } else {
+        isAdminLoggedIn = false;
+        updateUIForAdminStatus();
+    }
+    fetchProducts(); // Cargar productos al iniciar
+});
 
-    if (isLoggedIn) {
+function updateUIForAdminStatus() {
+    if (isAdminLoggedIn) {
         adminPanel.style.display = "block";
-        if (showLoginBtn) showLoginBtn.style.display = "none";
-        if (loginForm) loginForm.style.display = "none";
+        loginForm.style.display = "none"; // Si está logueado, ocultar el formulario de login
+        logoutBtn.style.display = "inline-block";
+        if (showLoginBtn) showLoginBtn.style.display = "none"; // <--- NUEVO: Ocultar el botón de mostrar login si está logueado
+        loginErrorMessage.style.display = "none";
     } else {
         adminPanel.style.display = "none";
-        if (showLoginBtn) showLoginBtn.style.display = "block";
+        loginForm.style.display = "none"; // <--- NUEVO: Ocultar el formulario de login al inicio
+        logoutBtn.style.display = "none";
+        if (showLoginBtn) showLoginBtn.style.display = "inline-block"; // <--- NUEVO: Mostrar el botón de mostrar login si no está logueado
     }
-    displayProducts(allProducts);
+    displayProducts(allProducts); // Vuelve a renderizar para mostrar/ocultar botones de admin
 }
 
+// <--- NUEVA FUNCIÓN: Para mostrar/ocultar el formulario de login
 window.toggleLoginForm = () => {
     if (loginForm.style.display === 'none') {
         loginForm.style.display = 'block';
-        usernameInput.value = '';
-        passwordInput.value = '';
-        loginErrorMessage.style.display = 'none';
-        showLoginBtn.textContent = 'Ocultar Formulario';
+        if (showLoginBtn) showLoginBtn.textContent = 'Ocultar Formulario';
     } else {
         loginForm.style.display = 'none';
-        showLoginBtn.textContent = 'Iniciar Sesión Administrador';
+        if (showLoginBtn) showLoginBtn.textContent = 'Iniciar Sesión Administrador';
     }
 };
 
+// Función para iniciar sesión
 window.login = async () => {
-    const username = usernameInput.value;
-    const password = passwordInput.value;
-    loginErrorMessage.style.display = "none";
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    loginErrorMessage.style.display = "none"; // Reset error message
 
     try {
         const response = await fetch(`${API_BASE_URL}/login`, {
@@ -80,42 +96,40 @@ window.login = async () => {
         const data = await response.json();
 
         if (response.ok) {
-            adminAuthToken = data.token;
-            localStorage.setItem('adminAuthToken', adminAuthToken);
-            localStorage.setItem('adminLoggedIn', 'true');
+            localStorage.setItem('adminToken', data.token); // Guardar token para simular sesión
+            isAdminLoggedIn = true;
             alert("Sesión iniciada correctamente.");
-            checkAdminStatus();
+            updateUIForAdminStatus();
         } else {
-            loginErrorMessage.textContent = data.message || "Error al iniciar sesión. Credenciales inválidas.";
+            loginErrorMessage.textContent = data.message || "Error al iniciar sesión.";
             loginErrorMessage.style.display = "block";
         }
     } catch (error) {
-        loginErrorMessage.textContent = "Error de conexión al servidor al intentar iniciar sesión.";
+        loginErrorMessage.textContent = "Error de conexión al servidor.";
         loginErrorMessage.style.display = "block";
         console.error("Error al iniciar sesión:", error);
     }
 };
 
+// Función para cerrar sesión
 window.logout = () => {
-    adminAuthToken = '';
-    localStorage.removeItem('adminAuthToken');
-    localStorage.removeItem('adminLoggedIn');
+    localStorage.removeItem('adminToken'); // Eliminar token de localStorage
+    isAdminLoggedIn = false;
     alert("Sesión cerrada.");
-    checkAdminStatus();
+    updateUIForAdminStatus();
 };
-
 
 // --- LÓGICA DE PRODUCTOS (CARGA Y BÚSQUEDA PARA CLIENTES) ---
 
+// Función para obtener productos del backend
 async function fetchProducts() {
-    productsContainer.innerHTML = '<p style="text-align: center; width: 100%;">Cargando productos...</p>';
     try {
         const response = await fetch(`${API_BASE_URL}/products`);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const productsData = await response.json();
-        allProducts = productsData.sort((a, b) => a.name.localeCompare(b.name));
+        allProducts = productsData.sort((a, b) => a.name.localeCompare(b.name)); // Ordenar alfabéticamente
         displayProducts(allProducts);
     } catch (error) {
         productsContainer.innerHTML = '<p style="text-align: center; width: 100%; color: red;">Error al cargar productos. Asegúrate de que el backend esté funcionando.</p>';
@@ -123,34 +137,33 @@ async function fetchProducts() {
     }
 }
 
+// Función para mostrar productos en el DOM
 function displayProducts(productsToDisplay) {
-    productsContainer.innerHTML = '';
+    productsContainer.innerHTML = ''; // Limpiar productos existentes
 
     if (productsToDisplay.length === 0) {
         productsContainer.innerHTML = '<p style="text-align: center; width: 100%;">No se encontraron productos.</p>';
         return;
     }
 
-    const isAdminLoggedInNow = localStorage.getItem('adminLoggedIn') === 'true';
-
     productsToDisplay.forEach(product => {
         const productDiv = document.createElement("div");
         productDiv.className = "product-card";
-        // Esta línea es CRÍTICA para que las imágenes locales se muestren
-        const imageUrl = product.image_url ? `${UPLOADS_BASE_URL}/uploads/${product.image_url}` : placeholderImage;
-        const formattedPrice = product.price ? parseFloat(product.price).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A';
+        // Aquí se usa product.imageUrl y UPLOADS_BASE_URL como en tu versión original
+        const imageUrl = product.imageUrl ? `${UPLOADS_BASE_URL}${product.imageUrl}` : placeholderImage;
+        const formattedPrice = product.price ? product.price.toFixed(2).replace('.', ',') : 'N/A';
 
         productDiv.innerHTML = `
             <img src="${imageUrl}" alt="${product.name}">
-            <h3>${product.name}</h3>
-            <p class="price">Precio: $${formattedPrice}</p>
+            <h4>${product.name}</h4>
+            <p>Precio: $${formattedPrice}</p>
             ${product.description ? `<p style="font-size:0.9em; color:#777;">${product.description}</p>` : ''}
-            <button class="whatsapp-btn" onclick="consultarWhatsApp('${product.name}', ${product.price})">Consultar por WhatsApp</button>
+            <a href="https://wa.me/${whatsappNumber}?text=Hola!%20Estoy%20interesado/a%20en%20el%20producto:%20*${encodeURIComponent(product.name)}*%20con%20precio%20$${formattedPrice}.%0A%0A¡Espero tu respuesta!" target="_blank" class="whatsapp-btn">Consultar por WhatsApp</a>
             
-            ${isAdminLoggedInNow ? `
-            <div class="admin-actions">
+            ${isAdminLoggedIn ? `
+            <div class="admin-controls">
                 <button class="edit-btn" onclick="editProduct(${product.id})">Editar</button>
-                <button class="delete-btn" onclick="deleteProduct(${product.id})">Eliminar</button>
+                <button class="delete-btn" onclick="deleteProduct(${product.id}, '${product.imageUrl || ''}')">Eliminar</button>
             </div>
             ` : ''}
         `;
@@ -158,13 +171,7 @@ function displayProducts(productsToDisplay) {
     });
 }
 
-function consultarWhatsApp(productName, productPrice) {
-    const message = `¡Hola! Me gustaría consultar sobre el producto "${productName}" que tiene un precio de $${parseFloat(productPrice).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}.%0A%0A¡Espero tu respuesta!`;
-    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-}
-
-
+// Función de búsqueda de productos
 window.searchProducts = () => {
     const searchTerm = searchInput.value.toLowerCase();
     const filteredProducts = allProducts.filter(product =>
@@ -177,18 +184,14 @@ window.searchProducts = () => {
 
 // --- LÓGICA DE ADMINISTRACIÓN (CRUD DE PRODUCTOS) ---
 
+// Abrir el modal de producto (para agregar o editar)
 window.openProductModal = async (productId = null) => {
-    if (localStorage.getItem('adminLoggedIn') !== 'true') {
-        alert("Debes iniciar sesión como administrador para realizar esta acción.");
-        return;
-    }
-
-    productForm.reset();
-    productIdInput.value = '';
-    currentImagePreview.style.display = 'none';
+    productForm.reset(); // Limpiar el formulario
+    productIdInput.value = ''; // Resetear ID
+    currentImagePreview.style.display = 'none'; // Ocultar previsualización de imagen
     currentImagePreview.src = '';
-    uploadStatus.textContent = '';
-    deleteCurrentImageCheckbox.checked = false;
+    uploadStatus.textContent = ''; // Limpiar estado de subida
+    deleteCurrentImageCheckbox.checked = false; // Desmarcar checkbox de eliminar imagen
 
     if (productId) {
         modalTitle.textContent = "Editar Producto";
@@ -201,9 +204,9 @@ window.openProductModal = async (productId = null) => {
             productNameInput.value = product.name;
             productPriceInput.value = product.price;
             productDescriptionInput.value = product.description || '';
-            // Esta línea es CRÍTICA para que las imágenes locales se muestren
-            if (product.image_url) {
-                currentImagePreview.src = `${UPLOADS_BASE_URL}/uploads/${product.image_url}`;
+            // Aquí se usa product.imageUrl y UPLOADS_BASE_URL como en tu versión original
+            if (product.imageUrl) {
+                currentImagePreview.src = `${UPLOADS_BASE_URL}${product.imageUrl}`;
                 currentImagePreview.style.display = 'block';
             }
         } catch (error) {
@@ -219,17 +222,19 @@ window.openProductModal = async (productId = null) => {
     modalOverlay.style.display = "block";
 };
 
+// Cerrar el modal de producto
 window.closeProductModal = () => {
     productFormModal.style.display = "none";
     modalOverlay.style.display = "none";
-    productForm.reset();
+    productForm.reset(); // Limpiar el formulario al cerrar
 };
 
+// Manejar el envío del formulario de producto (agregar/editar)
 productForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    if (localStorage.getItem('adminLoggedIn') !== 'true' || !adminAuthToken) {
-        alert("No tienes permisos de administrador o tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+    if (!isAdminLoggedIn) {
+        alert("No tienes permisos de administrador.");
         return;
     }
 
@@ -252,26 +257,27 @@ productForm.addEventListener("submit", async (e) => {
     if (imageFile) {
         formData.append('image', imageFile);
     }
-    formData.append('delete_image', deleteCurrentImage ? 'true' : 'false');
+    formData.append('delete_image_flag', deleteCurrentImage); // Enviar flag si la imagen actual debe borrarse
 
     uploadStatus.textContent = 'Guardando producto...';
-    uploadStatus.style.color = 'blue';
 
     try {
         let response;
         if (id) {
+            // Editar producto existente
             response = await fetch(`${API_BASE_URL}/products/${id}`, {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${adminAuthToken}`
+                    'Authorization': `Bearer ${ADMIN_AUTH_TOKEN}` // Enviar token de autenticación
                 },
-                body: formData
+                body: formData // FormData se envía directamente sin 'Content-Type'
             });
         } else {
+            // Agregar nuevo producto
             response = await fetch(`${API_BASE_URL}/products`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${adminAuthToken}`
+                    'Authorization': `Bearer ${ADMIN_AUTH_TOKEN}` // Enviar token de autenticación
                 },
                 body: formData
             });
@@ -282,27 +288,25 @@ productForm.addEventListener("submit", async (e) => {
             throw new Error(errorData.message || 'Error al guardar el producto');
         }
 
-        uploadStatus.textContent = 'Producto guardado exitosamente!';
-        uploadStatus.style.color = 'green';
-        setTimeout(() => {
-            closeProductModal();
-            fetchProducts();
-        }, 1000);
+        alert("Producto guardado exitosamente!");
+        closeProductModal();
+        fetchProducts(); // Recargar productos para actualizar la lista
     } catch (error) {
-        uploadStatus.textContent = `Error al guardar el producto: ${error.message}`;
-        uploadStatus.style.color = 'red';
-        console.error("Error al guardar producto:", error);
+        uploadStatus.textContent = 'Error al guardar el producto.';
         alert("Error al guardar el producto: " + error.message);
+        console.error("Error al guardar producto:", error);
     }
 });
 
+// Función para editar un producto (llamada desde el botón de cada tarjeta)
 window.editProduct = (productId) => {
     openProductModal(productId);
 };
 
+// Función para eliminar un producto (llamada desde el botón de cada tarjeta)
 window.deleteProduct = async (productId) => {
-    if (localStorage.getItem('adminLoggedIn') !== 'true' || !adminAuthToken) {
-        alert("No tienes permisos de administrador o tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+    if (!isAdminLoggedIn) {
+        alert("No tienes permisos de administrador.");
         return;
     }
 
@@ -314,7 +318,7 @@ window.deleteProduct = async (productId) => {
         const response = await fetch(`${API_BASE_URL}/products/${productId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${adminAuthToken}`
+                'Authorization': `Bearer ${ADMIN_AUTH_TOKEN}` // Enviar token
             }
         });
 
@@ -324,13 +328,14 @@ window.deleteProduct = async (productId) => {
         }
 
         alert("Producto eliminado exitosamente.");
-        fetchProducts();
+        fetchProducts(); // Recargar productos
     } catch (error) {
         alert("Error al eliminar el producto: " + error.message);
         console.error("Error al eliminar producto:", error);
     }
 };
 
+// Vista previa de la imagen seleccionada en el formulario del modal
 productImageInput.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -341,6 +346,8 @@ productImageInput.addEventListener('change', (event) => {
         };
         reader.readAsDataURL(file);
     } else {
+        // Si no se selecciona ningún archivo, ocultar la vista previa
+        // Pero mantener la imagen si estamos en modo edición y no se eliminó
         if (!productIdInput.value || deleteCurrentImageCheckbox.checked) {
              currentImagePreview.src = '';
              currentImagePreview.style.display = 'none';
@@ -348,22 +355,13 @@ productImageInput.addEventListener('change', (event) => {
     }
 });
 
+// Cuando el checkbox de eliminar imagen actual cambia, ajustar la visibilidad de la vista previa
 deleteCurrentImageCheckbox.addEventListener('change', () => {
     if (deleteCurrentImageCheckbox.checked) {
         currentImagePreview.style.display = 'none';
-        productImageInput.value = '';
-    } else if (productIdInput.value && currentImagePreview.src && currentImagePreview.src !== placeholderImage) {
+        productImageInput.value = ''; // Limpiar el input de archivo si se va a eliminar la imagen actual
+    } else if (productIdInput.value && currentImagePreview.src !== placeholderImage && currentImagePreview.src !== '') {
+        // Si hay un producto editándose y tenía imagen, mostrarla de nuevo
         currentImagePreview.style.display = 'block';
     }
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    fetchProducts();
-    checkAdminStatus();
-
-    window.onclick = function(event) {
-        if (event.target == modalOverlay) {
-            closeProductModal();
-        }
-    };
 });
